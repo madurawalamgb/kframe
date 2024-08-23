@@ -4,16 +4,15 @@
     <div class="text-center">
         <h1 class="text-3xl font-bold">Welcome to the K-Frame Form Page</h1>
         <div class="mt-4 flex justify-center space-x-4 mb-4">
-            
             @if($type=='view' || $type=='create')
                 <a href="{{ route('forms.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     All Forms
                 </a>
 
                 @if($type=='view')
-                    <form action="{{ route('forms.generate',[$form->id]) }}" method="POST">
+                    <form id="generate_form" action="{{ route('forms.generate',[$form->id]) }}" method="POST">
                         @csrf
-                        <button type="submit" class="inline-flex items-center ml-4 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Genarate Form
                         </button>
                     </form>
@@ -34,9 +33,11 @@
 
 @section('form')
 
-        <form id="mofify_form" action="{{ route('forms.store') }}" method="POST" class="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
+    <form id="mofify_form" action="{{$type == 'edit' && isset($form) ? route('forms.update',[$form->id]) :  route('forms.store') }}" method="POST" class="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
         @csrf
-
+        @if($type == 'edit')
+            @method('PUT')
+        @endif
         <div class="mb-4">
             <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
             <input type="text" id="name" name="name" value="{{old('name')??$form->name??null}}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" {{!$editable?' disabled':''}}>

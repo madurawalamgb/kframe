@@ -6,6 +6,7 @@ use App\Models\Form;
 use Illuminate\Support\Str;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
 
@@ -66,7 +67,15 @@ class FormController extends Controller
      */
     public function update(Request $request, Form $form)
     {
-        //
+        $validatedData = $request->validate([
+            'name' => ['required','string','max:255',Rule::unique('forms')->ignore($form->id)],
+            'description' => 'nullable|string',
+            'dependencies' => 'nullable',
+
+        ]);
+
+        $form->update($validatedData);
+        return redirect()->route('forms.show',[$form->id])->with('success', 'Record created successfully.');
     }
 
     /**
@@ -84,7 +93,7 @@ class FormController extends Controller
         // Define the name of the resources
         $modelName = str_replace(' ', '', ucwords($form->name));
         $controllerName = $modelName.'Controller';
-        $tableName = Str::snake($modelName).'s';
+        $tableName = Str::snake(Str::plural($modelName));
         $model_parm = strtolower($modelName);
         $name = $tableName;
         $viewPath = resource_path("views/{$name}");
@@ -215,7 +224,12 @@ class FormController extends Controller
                 if($field->type=='TEXT'){
                     $fields = $fields."\$table->string('".$field->field."');\r\n";
                 }
-
+                else if($field->type=='TEXTAREA'){
+                    $fields = $fields."\$table->text('".$field->field."');\r\n";
+                }
+                else if($field->type=='NUMBER'){
+                    $fields = $fields."\$table->integer('".$field->field."');\r\n";
+                }
             }
             $migrationContent = <<<PHP
                 <?php
@@ -318,18 +332,37 @@ class FormController extends Controller
         
         $filesystem->put("{$viewPath}/index.blade.php", $indexViewContent);
 
-
+        //form 
         $form_fields = '';
         foreach ($form->fields as $field) {
             $field_name = $field->field;
             $field_label = $field->name;
         
-            $form_fields .= <<<HTML
-        <div class="mb-3">
-            <label for="{$field_name}" class="block text-sm font-medium text-gray-700">{$field_label}</label>
-            <input type="text" id="{$field_name}" name="{$field_name}" value="{{ old('{$field_name}', \${$model_parm}->{$field_name} ?? '') }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required {{!\$editable ?' disabled':''}}>
-        </div>
-        HTML;
+            if($field->type == 'TEXT'){
+                $form_fields .= <<<HTML
+                <div class="mb-3">
+                    <label for="{$field_name}" class="block text-sm font-medium text-gray-700">{$field_label}</label>
+                    <input type="text" id="{$field_name}" name="{$field_name}" value="{{ old('{$field_name}', \${$model_parm}->{$field_name} ?? '') }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required {{!\$editable ?' disabled':''}}>
+                </div>
+                HTML;
+            }
+            else if($field->type == 'NUMBER'){
+                $form_fields .= <<<HTML
+                <div class="mb-3">
+                    <label for="{$field_name}" class="block text-sm font-medium text-gray-700">{$field_label}</label>
+                    <input type="number" id="{$field_name}" name="{$field_name}" value="{{ old('{$field_name}', \${$model_parm}->{$field_name} ?? '') }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required {{!\$editable ?' disabled':''}}>
+                </div>
+                HTML;
+            }
+            else if($field->type == 'TEXTAREA'){
+                $form_fields .= <<<HTML
+                <div class="mb-3">
+                    <label for="{$field_name}" class="block text-sm font-medium text-gray-700">{$field_label}</label>
+                    <textarea id="{$field_name}" name="{$field_name}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ old('{$field_name}', \${$model_parm}->{$field_name} ?? '') }}</textarea>                
+                </div>
+                HTML;
+            }
+            
         }
         
         $formContent = <<<BLADE
@@ -339,7 +372,7 @@ class FormController extends Controller
 
         $filesystem->put("{$viewPath}/form.blade.php", $formContent);
 
-
+        //edit blade
         $editViewContent = <<<BLADE
             @extends('k-frame.layouts.app')
             
@@ -367,6 +400,7 @@ class FormController extends Controller
                 
         $filesystem->put("{$viewPath}/edit.blade.php", $editViewContent);
 
+        //create blade
         $createViewContent = <<<BLADE
             @extends('k-frame.layouts.app')
             
@@ -394,6 +428,7 @@ class FormController extends Controller
                 
         $filesystem->put("{$viewPath}/create.blade.php", $createViewContent);
 
+        //view blade
         $showViewContent = <<<BLADE
             @extends('k-frame.layouts.app')
             
@@ -436,14 +471,7 @@ class FormController extends Controller
                 '--path' => str_replace(base_path(), '', $migrationPath),
             ]);
         }
-
-        return response()->json([
-            'message' => 'Model, Controller, and Migration generated successfully!',
-            'model' => $modelPath,
-            'controller' => $controllerPath,
-            'migration' => $migrationPath,
-        ]);
-
-        return view('k-frame.form.form',['type'=>'view','editable'=>false,'form'=>$form->load(['fields'])]);
+        return redirect()->route('forms.index');
+        
     }
 }

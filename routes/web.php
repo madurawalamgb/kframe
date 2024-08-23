@@ -24,3 +24,5 @@ Route::resource('fields','\App\Http\Controllers\FieldController');
 
 Route::resource('tests', '\App\Http\Controllers\TestController');
 Route::resource('customers', '\App\Http\Controllers\CustomerController');
+
+Route::resource('reaches', '\App\Http\Controllers\ReachController');

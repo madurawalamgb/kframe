@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Form extends Model
 {
@@ -14,6 +16,10 @@ class Form extends Model
         'name','dependencies','description'
     ];
 
+    protected $appends = [
+        'table'
+    ];
+
     protected $casts = [
         'dependencies' => 'array', 
     ];
@@ -21,6 +27,16 @@ class Form extends Model
     public function fields(): HasMany
     {
         return $this->hasMany(Field::class);
+    }
+
+    /**
+     * Get the user's first name.
+     */
+    protected function table(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string |null $value) => Str::snake(Str::plural(str_replace(' ', '', ucwords($this->name)))),
+        );
     }
 
 }
