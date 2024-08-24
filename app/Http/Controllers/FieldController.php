@@ -35,10 +35,12 @@ class FieldController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'type' => 'required|in:TEXT,NUMBER,TEXTAREA,BELONGSTO,BELONGSTOMANY,SELECTON,FUNCTION,HASONE,MULTYSELECTON,BOOLEAN,BUTTON',
-            'selections' => 'nullable|string',
+            'selections' => 'nullable|string|json',
             'readonly' => 'nullable|boolean',
             'disabled' => 'nullable|boolean',
         ]);
+       // dd( $validatedData );
+
         Field::create($validatedData);
 
         return redirect()->back()->with('success', 'Record created successfully.');

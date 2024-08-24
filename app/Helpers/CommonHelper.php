@@ -21,3 +21,15 @@ function getModelClassNames()
 
     return $modelClasses;
 }
+
+function getFunctionName($type='',$string='')
+{
+    //camel case
+    return lcfirst(str_replace(' ', '', ucwords( $type.' '.$string)));
+}
+
+function getClassName($string='')
+{
+    //StudlyCase (PascalCase)
+    return str_replace(' ', '', ucwords($string));
+}

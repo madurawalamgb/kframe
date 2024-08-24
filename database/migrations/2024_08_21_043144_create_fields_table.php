@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('field');
             $table->string('name');
             $table->string('description')->nullable();
-            $table->enum('type',['TEXT','NUMBER','TEXTAREA','BELONGSTO','BELONGSTOMANY','SELECTON','FUNCTION','HASONE','MULTYSELECTON','BOOLEAN','BUTTON'])->default('TEXT');
-            $table->string('selections')->default('[]');
+            $table->enum('type',['TEXT','NUMBER','TEXTAREA','BELONGSTO','BELONGSTOMANY','SELECTION','FUNCTION','HASONE','MULTYSELECTION','BOOLEAN','BUTTON'])->default('TEXT');
+            $table->json('selections')->nullable();
             $table->boolean('readonly')->default(false);
             $table->boolean('disabled')->default(false);
             $table->timestamps();

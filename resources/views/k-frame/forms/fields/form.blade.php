@@ -45,8 +45,10 @@
         </div>
 
         <div class="mb-4">
-            <label for="selections" class="block text-sm font-medium text-gray-700">Selections</label>
-            <input type="text" id="selections" name="selections" value="[]" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <label for="selections" class="block text-sm text-gray-700 font-medium mb-2">selections (JSON format):</label>
+            <textarea id="selections" name="selections" rows="10" cols="30"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder='{"M": "Male", "F": "Female"}'>{{ old('selections') }}</textarea>
         </div>
 
         <div class="mb-4">

@@ -91,7 +91,7 @@ class FormController extends Controller
     public function generate(Form $form)
     {
         // Define the name of the resources
-        $modelName = str_replace(' ', '', ucwords($form->name));
+        $modelName = getClassName($form->name);
         $controllerName = $modelName.'Controller';
         $tableName = Str::snake(Str::plural($modelName));
         $model_parm = strtolower($modelName);
@@ -105,10 +105,16 @@ class FormController extends Controller
         $modelPath = app_path("Models/{$modelName}.php");
         $controllerPath = app_path("Http/Controllers/{$controllerName}.php");
         $controllerNamespace = '\App\Http\Controllers';
+        $modelNamespace = '\App\Models';
 
         // Instantiate the Filesystem class
         $filesystem = new Filesystem();
 
+        $booleanFields=$form->fields()->where('type', 'BOOLEAN')->pluck('field')->map(function($field_name) {
+            return "'{$field_name}'";
+        })->toArray();
+
+        $selectionFields=$form->fields()->where('type', 'SELECTION')->get();
         // Check if the model file exists
         if ($filesystem->exists($modelPath)) {
             // Remove all existing content
@@ -118,6 +124,42 @@ class FormController extends Controller
                             return "'{$field}'";
                         })
                         ->implode(',');
+
+            $cast = '';
+            foreach ($booleanFields as $field) {
+                $cast .=  $field ." => 'boolean', ";
+            }
+            
+            // Optionally, remove the trailing comma and space
+            $cast = rtrim($cast, ', ');
+
+
+            $static_arrays = '';
+            $static_functions = '';
+
+            foreach ($selectionFields as $field) {
+                $formattedPairs = array_map(
+                    fn($key, $value) => "'$key' => '$value'",
+                    array_keys($field->selections),
+                    $field->selections
+                );
+                
+                // Convert the array to a comma-separated string
+                $formattedString = implode(', ', $formattedPairs);
+                $static_arrays .=  "//static_arrays
+    private static \${$field->name} =  [".$formattedString."]; \n \n";
+
+                $static_arrays .=  "\t//static_functions
+    public static function  ". getFunctionName('get',$field->name)."()
+    {
+        return self::\${$field->name};
+    }
+
+    public static function  ". getFunctionName('decode',$field->name)."(\$key=null)
+    {
+        return \$key ? (self::".getFunctionName('get',$field->name)."()[\$key]??null) : null;
+    }";
+            }
             // Write new content to the file
             $newContent = <<<PHP
                 <?php
@@ -134,6 +176,14 @@ class FormController extends Controller
                         {$fillable}
                     ];
 
+                    protected \$cast = [
+                        {$cast}
+                    ];
+
+                    {$static_arrays}
+
+                    {$static_functions}
+
                     // Add your custom methods and properties here
                 }
                 PHP;
@@ -142,7 +192,7 @@ class FormController extends Controller
             $filesystem->put($modelPath, $newContent);
 
         }
-        
+        $booleanFieldsString = implode(',', $booleanFields);
         if ($filesystem->exists($controllerPath)) {
             $controllerContent = <<<PHP
             <?php
@@ -154,6 +204,13 @@ class FormController extends Controller
 
             class {$controllerName} extends Controller
             {
+                private \$booleanFields = [];
+
+                public function __construct()
+                {
+                    \$this->booleanFields = [{$booleanFieldsString}];
+                }
+
                 public function index()
                 {
                     \$items = {$modelName}::all();
@@ -176,7 +233,13 @@ class FormController extends Controller
                     //     'disabled' => 'required|boolean',
                     // ]);
 
-                    {$modelName}::create(\$request->all());
+                    
+                   
+                    \$data = \$request->all();
+                    foreach(\$this->booleanFields as \$field){
+                        \$data[\$field] = isset(\$data[\$field]) ? true : false;
+                    }
+                    {$modelName}::create(\$data);
 
                     return redirect()->route('{$name}.index');
                 }
@@ -202,7 +265,12 @@ class FormController extends Controller
                     //     'disabled' => 'required|boolean',
                     // ]);
 
-                    \${$model_parm}->update(\$request->all());
+                    \$data = \$request->all();
+                    foreach(\$this->booleanFields as \$field){
+                        \$data[\$field] = isset(\$data[\$field]) ? true : false;
+                    }
+
+                    \${$model_parm}->update(\$data);
 
                     return redirect()->route('{$name}.index');
                 }
@@ -229,6 +297,14 @@ class FormController extends Controller
                 }
                 else if($field->type=='NUMBER'){
                     $fields = $fields."\$table->integer('".$field->field."');\r\n";
+                }
+                else if($field->type=='BOOLEAN'){
+                    $fields = $fields."\$table->boolean('".$field->field."')->default(false);\r\n";
+                }
+                else if($field->type=='SELECTION'){
+                    $quotedSelections = array_map(fn($key) => "'$key'", array_keys($field->selections));
+                    $selectionKeysString = implode(',', $quotedSelections);
+                    $fields = $fields."\$table->enum('".$field->field."',[".$selectionKeysString."]);\r\n";
                 }
             }
             $migrationContent = <<<PHP
@@ -264,15 +340,28 @@ class FormController extends Controller
             $filesystem->makeDirectory($viewPath, 0755, true);
         }
 
+        $filteredFields = $form->fields->filter(function($field) {
+            return $field->type !== 'BOOLEAN';
+        });
         $ths = '';
-        foreach($form->fields as $field){
-            $ths .= "<th class='px-4 py-2 text-left text-sm font-medium text-gray-500'>{$field->name}</th>\n";
+        foreach($filteredFields as $field){
+            if($field->type != 'BOOLEAN'){
+                $ths .= "<th class='px-4 py-2 text-left text-sm font-medium text-gray-500'>{$field->name}</th>\n";
+            }
         }
         
         $tds = '';
-        foreach($form->fields as $field){
+        foreach($filteredFields as $field){
             $fieldName = $field->field;
-            $tds .= "<td class='px-4 py-2 text-sm text-gray-900'>{{ \$item->$fieldName }}</td>\n";
+            if($field->type != 'BOOLEAN'){
+                if($field->type == 'SELECTION'){
+                    $decodefn = getFunctionName('decode',$fieldName);
+                    $tds .= "<td class='px-4 py-2 text-sm text-gray-900'>{{ $modelNamespace\\$modelName::$decodefn(\$item->$fieldName) }}</td>\n";
+                }
+                else{
+                    $tds .= "<td class='px-4 py-2 text-sm text-gray-900'>{{ \$item->$fieldName }}</td>\n";
+                }
+            }
         }
         
         // Index View
@@ -358,7 +447,30 @@ class FormController extends Controller
                 $form_fields .= <<<HTML
                 <div class="mb-3">
                     <label for="{$field_name}" class="block text-sm font-medium text-gray-700">{$field_label}</label>
-                    <textarea id="{$field_name}" name="{$field_name}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ old('{$field_name}', \${$model_parm}->{$field_name} ?? '') }}</textarea>                
+                    <textarea id="{$field_name}" name="{$field_name}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" {{!\$editable ?' disabled':''}}>{{ old('{$field_name}', \${$model_parm}->{$field_name} ?? '') }}</textarea>                
+                </div>
+                HTML;
+            }
+            else if($field->type == 'BOOLEAN'){
+                $form_fields .= <<<HTML
+                <div class="mb-3">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="{$field_name}" name="{$field_name}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" value="1" {{ old('{$field_name}', \${$model_parm}->{$field_name} ?? '') ? ' checked' : '' }} {{!\$editable ?' disabled':''}}>
+                        <label for="{$field_name}" class="ml-2 block text-sm font-medium text-gray-700">{$field_label}</label>
+                    </div>
+                </div>
+                HTML;
+            }
+            else if($field->type == 'SELECTION'){
+                $getfn = getFunctionName('get',$field->field);
+                $form_fields .= <<<HTML
+                <div class="mb-3">
+                    <label for="{$field->field}" class="block text-sm font-medium text-gray-700">{$field->name}</label>
+                    <select id="{$field->field}" name="{$field->field}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" {{!\$editable ?' disabled':''}}>
+                    @foreach({$modelNamespace}\\{$modelName}::{$getfn}() as \$k => \$v) 
+                        <option value="{{\$k}}"  {{ \$k == (old('{$field_name}', \${$model_parm}->{$field_name} ?? '')) ? ' selected' : '' }} >{{\$v}}</option>
+                    @endforeach
+                    </select>
                 </div>
                 HTML;
             }
