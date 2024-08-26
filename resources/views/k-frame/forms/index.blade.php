@@ -44,9 +44,11 @@
                                 Delete
                             </button>
                         </form>
-                        <a href="{{ route($form->table.'.index') }}" class="inline-flex items-center px-3 py-1 ml-4 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        @if( Route::has($form->table.'.index'))
+                        <a href="{{route($form->table.'.index') }}" class="inline-flex items-center px-3 py-1 ml-4 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                             Form
                         </a>
+                        @endif
                         <!-- <a href="{{ route('forms.edit', $form->id) }}" class="inline-flex items-center px-3 py-1 ml-4 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
                             Edit
                         </a> -->

@@ -56,6 +56,12 @@
                 @endforeach
             </select>
         </div>
+        @if($type != 'create')
+            <div class="mb-4">
+                <label for="identifier" class="block text-sm font-medium text-gray-700">Identifier</label>
+                <input type="text" id="identifier" name="identifier" value="{{old('identifier')??$form->identifier??null}}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" {{!$editable?' disabled':''}}>
+            </div>
+        @endif
         @if($editable)
         <div class="mt-4">
             <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -92,14 +98,25 @@
             <option value="TEXTAREA">TEXTAREA</option>
             <option value="BELONGSTO">BELONGSTO</option>
             <option value="BELONGSTOMANY">BELONGSTOMANY</option>
-            <option value="SELECTON">SELECTON</option>
+            <option value="SELECTION">SELECTION</option>
             <option value="FUNCTION">FUNCTION</option>
             <option value="HASONE">HASONE</option>
-            <option value="MULTYSELECTON">MULTYSELECTON</option>
+            <option value="MULTYSELECTION">MULTYSELECTION</option>
             <option value="BOOLEAN">BOOLEAN</option>
             <option value="BUTTON">BUTTON</option>
         </select>
     </div>
+
+    <div class="mb-4">
+        <label for="related_model" class="block text-sm font-medium text-gray-700">Related To</label>
+        <select id="related_model" name="related_model"  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" {{!$editable?' disabled':''}}>
+            <option value="" >--None--</option>
+            @foreach(getModelClassNames() as $model)
+                <option value="{{ $model }}" {{in_array($model,old('related_model')??$form->related_model??[])? 'selected ':''}}>{{ $model }}</option>
+            @endforeach
+        </select>
+    </div>
+
     <div class="mb-4">
         <label for="selections" class="block text-sm text-gray-700 font-medium mb-2">selections (JSON format):</label>
         <textarea id="selections" name="selections" rows="4" cols="30"

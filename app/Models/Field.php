@@ -11,7 +11,7 @@ class Field extends Model
     use HasFactory;
 
     protected $fillable = [
-        'form_id','field','name','description','type','selections','readonly','disabled'
+        'form_id','field','name','description','type','selections','readonly','disabled','related_model'
     ];
 
     protected $casts = [

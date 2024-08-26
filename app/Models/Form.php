@@ -13,7 +13,7 @@ class Form extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name','dependencies','description'
+        'name','dependencies','description','identifier'
     ];
 
     protected $appends = [

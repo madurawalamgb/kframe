@@ -25,11 +25,25 @@ function getModelClassNames()
 function getFunctionName($type='',$string='')
 {
     //camel case
-    return lcfirst(str_replace(' ', '', ucwords( $type.' '.$string)));
+    return lcfirst(str_replace(' ', '', ucwords( $type.' '.str_replace('_', ' ', $string))));
 }
 
 function getClassName($string='')
 {
     //StudlyCase (PascalCase)
     return str_replace(' ', '', ucwords($string));
+}
+
+function getTableName($model='')
+{
+    return Str::snake(Str::plural($model));
+}
+
+function getFunctionNameByClass($class='')
+{
+    return lcfirst($class);
+}
+
+function getParmByTableName($tableName){
+    return Str::singular($tableName);
 }

@@ -45,6 +45,15 @@
         </div>
 
         <div class="mb-4">
+            <label for="dependencies" class="block text-sm font-medium text-gray-700">Related To</label>
+            <select id="related_model" name="related_model" multiple class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" {{!$editable?' disabled':''}}>
+                @foreach(getModelClassNames() as $model)
+                    <option value="{{ $model }}" {{in_array($model,old('dependencies')??$form->related_model??[])? 'selected ':''}}>{{ $model }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="mb-4">
             <label for="selections" class="block text-sm text-gray-700 font-medium mb-2">selections (JSON format):</label>
             <textarea id="selections" name="selections" rows="10" cols="30"
                   class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"

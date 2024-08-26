@@ -34,10 +34,11 @@ class FieldController extends Controller
             'field' => 'required|string|max:255',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'type' => 'required|in:TEXT,NUMBER,TEXTAREA,BELONGSTO,BELONGSTOMANY,SELECTON,FUNCTION,HASONE,MULTYSELECTON,BOOLEAN,BUTTON',
+            'type' => 'required|in:TEXT,NUMBER,TEXTAREA,BELONGSTO,BELONGSTOMANY,SELECTION,FUNCTION,HASONE,MULTYSELECTION,BOOLEAN,BUTTON',
             'selections' => 'nullable|string|json',
             'readonly' => 'nullable|boolean',
             'disabled' => 'nullable|boolean',
+            'related_model' =>  'nullable|string'
         ]);
        // dd( $validatedData );
 
